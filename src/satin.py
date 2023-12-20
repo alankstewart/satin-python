@@ -1,3 +1,7 @@
+"""
+CO2 Laser Saturation Intensity calculation
+"""
+
 import datetime
 import math
 import re
@@ -31,7 +35,7 @@ class Satin:
             laser_data = laser_file.read()
             laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
 
-            with ProcessPoolExecutor(max_workers=8) as executor:
+            with ProcessPoolExecutor() as executor:
                 futures = [executor.submit(self.process, input_powers, Laser(*laser)) for laser in laser_matches]
                 for future in as_completed(futures):
                     future.result()

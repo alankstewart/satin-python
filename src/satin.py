@@ -61,13 +61,11 @@ class Satin:
             for input_power in input_powers:
                 for gaussian in self.gaussian_calculation(input_power, laser.small_signal_gain):
                     file.write(
-                        '{:<7}  {:<19}  {:<12}  {:>12.3f}  {:>9.3f}\n'.format(
-                            gaussian.input_power(),
-                            gaussian.output_power(),
-                            gaussian.saturation_intensity(),
-                            gaussian.log_output_power_divided_by_input_power(),
-                            gaussian.output_power_minus_input_power()
-                        )
+                        f'{gaussian.input_power():<7}  '
+                        f'{gaussian.output_power():<19}  '
+                        f'{gaussian.saturation_intensity():<12}  '
+                        f'{gaussian.log_output_power_divided_by_input_power():>12.3f}  '
+                        f'{gaussian.output_power_minus_input_power():>9.3f}\n'
                     )
 
             file.write('\nEnd date: {}\n'.format(datetime.datetime.now().isoformat()))

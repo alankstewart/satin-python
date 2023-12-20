@@ -1,10 +1,11 @@
-import math
 import datetime
+import math
 import re
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 
 PI = math.pi
+
 
 class Satin:
     RAD = 0.18
@@ -32,7 +33,7 @@ class Satin:
             with ThreadPoolExecutor(4) as executor:
                 executor.map(lambda laser: self.process(input_powers, Laser(*laser)), laser_matches)
 
-        print(f"The time was {datetime.datetime.now().timestamp() - start} seconds")
+        print(f'The time was {datetime.datetime.now().timestamp() - start} seconds')
 
     def get_input_powers(self):
         with open("pin1.dat") as pin_file:
@@ -41,11 +42,9 @@ class Satin:
     def process(self, input_powers, laser):
         with open(f"{laser.output_file}", "w") as file:
             file.write(
-                "Start date: {}\n\nGaussian Beam\n\nPressure in Main Discharge = {}kPa\nSmall-signal Gain = {}\nCO2 via {}\n\n"
-                .format(datetime.datetime.now().isoformat(),
-                        laser.discharge_pressure,
-                        laser.small_signal_gain,
-                        laser.carbon_dioxide)
+                f'Start date: {datetime.datetime.now().isoformat()}\n\n'
+                f'Gaussian Beam\n\nPressure in Main Discharge = {laser.discharge_pressure}kPa\n'
+                f'Small-signal Gain = {laser.small_signal_gain}\nCO2 via {laser.carbon_dioxide}\n\n'
             )
 
             table_header = "{:<7}  {:<19}  {:<12}  {:<13}  {:<8}\n"
@@ -87,11 +86,23 @@ class Satin:
         ]
 
         input_intensity = 2 * input_power / self.AREA
-        return sum((((reduce(lambda output_intensity, j: output_intensity * (
-                1 + (saturation_intensity * small_signal_gain / 32000 * self.DZ) / (
-                saturation_intensity + output_intensity) - expr1[j]),
-                             range(self.INCR), input_intensity * math.exp(-2 * r ** 2 / self.RAD2))) * self.EXPR * r)
-                    for r in (i * self.DR for i in range(int(0.5 / self.DR)))))
+        return sum(
+            (
+                (
+                        (
+                            reduce(
+                                lambda output_intensity, j: output_intensity * (
+                                        1 + (saturation_intensity * small_signal_gain / 32000 * self.DZ)
+                                        / (saturation_intensity + output_intensity) - expr1[j]
+                                ),
+                                range(self.INCR),
+                                input_intensity * math.exp(-2 * r ** 2 / self.RAD2),
+                            )
+                        ) * self.EXPR * r
+                )
+                for r in (i * self.DR for i in range(int(0.5 / self.DR)))
+            )
+        )
 
 
 class Laser:
@@ -120,4 +131,3 @@ class Gaussian:
 
 if __name__ == "__main__":
     Satin().main()
-

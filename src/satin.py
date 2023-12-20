@@ -85,7 +85,7 @@ class Satin:
             2 * ((i - self.INCR // 2) / 25) * self.DZ / (self.Z12 + ((i - self.INCR // 2) / 25) ** 2)
             for i in range(self.INCR)
         ]
-        
+
         input_intensity = 2 * input_power / self.AREA
         return sum((((reduce(lambda output_intensity, j: output_intensity * (
                 1 + (saturation_intensity * small_signal_gain / 32000 * self.DZ) / (

@@ -1,7 +1,7 @@
 import datetime
 import math
 import re
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import reduce
 
 PI = math.pi
@@ -26,35 +26,38 @@ class Satin:
     def calculate(self):
         start = datetime.datetime.now().timestamp()
 
-        with open("laser.dat") as laser_file:
+        with open('laser.dat', encoding='utf-8') as laser_file:
             input_powers = self.get_input_powers()
             laser_data = laser_file.read()
-            laser_matches = re.findall(r"((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)", laser_data)
-            with ThreadPoolExecutor(4) as executor:
-                executor.map(lambda laser: self.process(input_powers, Laser(*laser)), laser_matches)
+            laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
+
+            with ProcessPoolExecutor(max_workers=8) as executor:
+                futures = [executor.submit(self.process, input_powers, Laser(*laser)) for laser in laser_matches]
+                for future in as_completed(futures):
+                    future.result()
 
         print(f'The time was {datetime.datetime.now().timestamp() - start} seconds')
 
     def get_input_powers(self):
-        with open("pin1.dat") as pin_file:
-            return [int(match.group()) for match in re.finditer(r"\d+", pin_file.read())]
+        with open('pin.dat', encoding='utf-8') as pin_file:
+            return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
 
     def process(self, input_powers, laser):
-        with open(f"{laser.output_file}", "w") as file:
+        with open(f'{laser.output_file}', 'w', encoding='utf-8') as file:
             file.write(
                 f'Start date: {datetime.datetime.now().isoformat()}\n\n'
                 f'Gaussian Beam\n\nPressure in Main Discharge = {laser.discharge_pressure}kPa\n'
                 f'Small-signal Gain = {laser.small_signal_gain}\nCO2 via {laser.carbon_dioxide}\n\n'
             )
 
-            table_header = "{:<7}  {:<19}  {:<12}  {:<13}  {:<8}\n"
-            file.write(table_header.format("Pin", "Pout", "Sat. Int", "ln(Pout/Pin)", "Pout-Pin"))
-            file.write(table_header.format("(watts)", "(watts)", "(watts/cm2)", "", "(watts)"))
+            table_header = '{:<7}  {:<19}  {:<12}  {:<13}  {:<8}\n'
+            file.write(table_header.format('Pin', 'Pout', 'Sat. Int', 'ln(Pout/Pin)', 'Pout-Pin'))
+            file.write(table_header.format('(watts)', '(watts)', '(watts/cm2)', '', '(watts)'))
 
             for input_power in input_powers:
                 for gaussian in self.gaussian_calculation(input_power, laser.small_signal_gain):
                     file.write(
-                        "{:<7}  {:<19}  {:<12}  {:>12.3f}  {:>9.3f}\n".format(
+                        '{:<7}  {:<19}  {:<12}  {:>12.3f}  {:>9.3f}\n'.format(
                             gaussian.input_power(),
                             gaussian.output_power(),
                             gaussian.saturation_intensity(),
@@ -63,17 +66,14 @@ class Satin:
                         )
                     )
 
-            file.write("\nEnd date: {}\n".format(datetime.datetime.now().isoformat()))
+            file.write('\nEnd date: {}\n'.format(datetime.datetime.now().isoformat()))
             file.flush()
 
         return file.name
 
     def gaussian_calculation(self, input_power, small_signal_gain):
-        with ThreadPoolExecutor(8) as executor:
-            return list(executor.map(
-                lambda saturation_intensity: self.create_gaussian(input_power, small_signal_gain, saturation_intensity),
-                range(10000, 25001, 1000)
-            ))
+        return [self.create_gaussian(input_power, small_signal_gain, saturation_intensity)
+                for saturation_intensity in range(10000, 25001, 1000)]
 
     def create_gaussian(self, input_power, small_signal_gain, saturation_intensity):
         output_power = self.calculate_output_power(input_power, small_signal_gain, saturation_intensity)
@@ -89,18 +89,20 @@ class Satin:
         return sum(
             (
                 (
+                    (
                         (
                             reduce(
                                 lambda output_intensity, j: output_intensity * (
-                                        1 + (saturation_intensity * small_signal_gain / 32000 * self.DZ)
-                                        / (saturation_intensity + output_intensity) - expr1[j]
+                                    1 + (saturation_intensity * small_signal_gain / 32000 * self.DZ)
+                                    / (saturation_intensity + output_intensity) - expr1[j]
                                 ),
                                 range(self.INCR),
                                 input_intensity * math.exp(-2 * r ** 2 / self.RAD2),
                             )
                         ) * self.EXPR * r
+                    )
+                    for r in (i * self.DR for i in range(int(0.5 / self.DR)))
                 )
-                for r in (i * self.DR for i in range(int(0.5 / self.DR)))
             )
         )
 
@@ -129,5 +131,5 @@ class Gaussian:
         return round(value * 1000.0) / 1000.0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     Satin().main()

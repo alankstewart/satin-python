@@ -9,20 +9,24 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import reduce
 
 PI = math.pi
+RAD = 0.18
+RAD2 = RAD ** 2
+W1 = 0.3
+DR = 0.002
+DZ = 0.04
+LAMBDA = 0.0106
+AREA = PI * RAD2
+Z1 = PI * W1 ** 2 / LAMBDA
+Z12 = Z1 ** 2
+EXPR = 2 * PI * DR
+INCR = 8001
 
 
 class Satin:
-    RAD = 0.18
-    RAD2 = RAD ** 2
-    W1 = 0.3
-    DR = 0.002
-    DZ = 0.04
-    LAMBDA = 0.0106
-    AREA = PI * RAD2
-    Z1 = PI * W1 ** 2 / LAMBDA
-    Z12 = Z1 ** 2
-    EXPR = 2 * PI * DR
-    INCR = 8001
+    EXPR1 = [
+        2 * ((i - INCR // 2) / 25) * DZ / (Z12 + ((i - INCR // 2) / 25) ** 2)
+        for i in range(INCR)
+    ]
 
     def main(self):
         self.calculate()
@@ -42,7 +46,8 @@ class Satin:
 
         print(f'The time was {datetime.datetime.now().timestamp() - start} seconds')
 
-    def get_input_powers(self):
+    @staticmethod
+    def get_input_powers():
         with open('pin.dat', encoding='utf-8') as pin_file:
             return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
 
@@ -74,28 +79,26 @@ class Satin:
         return file.name
 
     def gaussian_calculation(self, input_power, small_signal_gain):
-        return [self.create_gaussian(input_power, small_signal_gain, saturation_intensity)
-                for saturation_intensity in range(10000, 25001, 1000)]
+        # return [self.create_gaussian(input_power, small_signal_gain, saturation_intensity)
+        #         for saturation_intensity in range(10000, 25001, 1000)]
+        return list(
+            map(lambda saturation_intensity: self.create_gaussian(input_power, small_signal_gain, saturation_intensity),
+                range(10000, 25001, 1000)))
 
     def create_gaussian(self, input_power, small_signal_gain, saturation_intensity):
         output_power = self.calculate_output_power(input_power, small_signal_gain, saturation_intensity)
         return Gaussian(input_power, output_power, saturation_intensity)
 
     def calculate_output_power(self, input_power, small_signal_gain, saturation_intensity):
-        expr1 = [
-            2 * ((i - self.INCR // 2) / 25) * self.DZ / (self.Z12 + ((i - self.INCR // 2) / 25) ** 2)
-            for i in range(self.INCR)
-        ]
-
-        input_intensity = 2 * input_power / self.AREA
+        input_intensity = 2 * input_power / AREA
         return sum(
             ((((
                    reduce(
                        lambda output_intensity, j: output_intensity * (
-                               1 + (saturation_intensity * small_signal_gain / 32000 * self.DZ)
-                               / (saturation_intensity + output_intensity) - expr1[j]), range(self.INCR),
-                       input_intensity * math.exp(-2 * r ** 2 / self.RAD2),
-                   )) * self.EXPR * r) for r in (i * self.DR for i in range(int(0.5 / self.DR))))
+                               1 + (saturation_intensity * small_signal_gain / 32000 * DZ)
+                               / (saturation_intensity + output_intensity) - self.EXPR1[j]), range(INCR),
+                       input_intensity * math.exp(-2 * r ** 2 / RAD2),
+                   )) * EXPR * r) for r in (i * DR for i in range(int(0.5 / DR))))
              )
         )
 
@@ -120,7 +123,8 @@ class Gaussian:
     def output_power_minus_input_power(self):
         return self.round_up(self.output_power() - self.input_power())
 
-    def round_up(self, value):
+    @staticmethod
+    def round_up(value):
         return round(value * 1000.0) / 1000.0
 
 

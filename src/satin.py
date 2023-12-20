@@ -61,17 +61,6 @@ def gaussian_calculation(input_power, small_signal_gain):
         return [future.result() for future in futures]
 
 
-def gaussian_calculation1(input_power, small_signal_gain):
-    return [create_gaussian(input_power, small_signal_gain, saturation_intensity)
-            for saturation_intensity in range(10000, 25001, 1000)]
-
-
-def gaussian_calculation2(input_power, small_signal_gain):
-    return list(
-        map(lambda saturation_intensity: create_gaussian(input_power, small_signal_gain, saturation_intensity),
-            range(10000, 25001, 1000)))
-
-
 def create_gaussian(input_power, small_signal_gain, saturation_intensity):
     output_power = calculate_output_power(input_power, small_signal_gain, saturation_intensity)
     return Gaussian(input_power, output_power, saturation_intensity)

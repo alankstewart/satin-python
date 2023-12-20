@@ -87,23 +87,14 @@ class Satin:
 
         input_intensity = 2 * input_power / self.AREA
         return sum(
-            (
-                (
-                    (
-                        (
-                            reduce(
-                                lambda output_intensity, j: output_intensity * (
-                                    1 + (saturation_intensity * small_signal_gain / 32000 * self.DZ)
-                                    / (saturation_intensity + output_intensity) - expr1[j]
-                                ),
-                                range(self.INCR),
-                                input_intensity * math.exp(-2 * r ** 2 / self.RAD2),
-                            )
-                        ) * self.EXPR * r
-                    )
-                    for r in (i * self.DR for i in range(int(0.5 / self.DR)))
-                )
-            )
+            ((((
+                   reduce(
+                       lambda output_intensity, j: output_intensity * (
+                               1 + (saturation_intensity * small_signal_gain / 32000 * self.DZ)
+                               / (saturation_intensity + output_intensity) - expr1[j]), range(self.INCR),
+                       input_intensity * math.exp(-2 * r ** 2 / self.RAD2),
+                   )) * self.EXPR * r) for r in (i * self.DR for i in range(int(0.5 / self.DR))))
+             )
         )
 
 

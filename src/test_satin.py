@@ -2,7 +2,7 @@ import csv
 
 import pytest
 
-from src.satin import gaussian_calculation, Gaussian
+from satin import gaussian_calculation, Gaussian
 
 
 def _read_csv(file_path):

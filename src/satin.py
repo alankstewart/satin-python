@@ -3,6 +3,7 @@ import math
 import multiprocessing
 import re
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, wait, ALL_COMPLETED
+from dataclasses import dataclass
 from typing import List
 
 # Constants and Configuration
@@ -36,25 +37,27 @@ class Satin:
             laser_data = laser_file.read()
             laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
             with ThreadPoolExecutor() as executor:
-                futures = [executor.submit(_process, input_powers, Laser(*laser)) for laser in laser_matches]
+                futures = [
+                    executor.submit(_process, input_powers, Laser(laser[0], float(laser[1]), int(laser[2]), laser[3]))
+                    for laser in laser_matches]
                 wait(futures, return_when=ALL_COMPLETED)
 
         print(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
 
 
+@dataclass(frozen=True)
 class Laser:
-    def __init__(self, output_file, small_signal_gain, discharge_pressure, carbon_dioxide):
-        self.output_file = output_file
-        self.small_signal_gain = float(small_signal_gain)
-        self.discharge_pressure = int(discharge_pressure)
-        self.carbon_dioxide = carbon_dioxide
+    output_file: str
+    small_signal_gain: float
+    discharge_pressure: int
+    carbon_dioxide: str
 
 
+@dataclass(frozen=True, order=True)
 class Gaussian:
-    def __init__(self, input_power, output_power, saturation_intensity):
-        self.input_power = input_power
-        self.output_power = output_power
-        self.saturation_intensity = saturation_intensity
+    input_power: float
+    output_power: float
+    saturation_intensity: int
 
     def log_output_power_divided_by_input_power(self):
         return self.round_up(math.log(self.output_power / self.input_power))

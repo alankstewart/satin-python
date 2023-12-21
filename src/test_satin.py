@@ -25,8 +25,7 @@ def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensi
     log_output_power_divided_by_input_power = float(log_output_power_divided_by_input_power)
     output_power_minus_input_power = float(output_power_minus_input_power)
 
-    results = gaussian_calculation(input_power, small_signal_gain)
-    for result in results:
+    for result in gaussian_calculation(input_power, small_signal_gain):
         if result.saturation_intensity == saturation_intensity:
             assert Gaussian.round_up(result.output_power) == output_power
             assert result.log_output_power_divided_by_input_power() == log_output_power_divided_by_input_power

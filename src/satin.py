@@ -2,6 +2,7 @@ import datetime
 import math
 import multiprocessing
 import re
+import textwrap
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, wait, ALL_COMPLETED
 from dataclasses import dataclass
 from typing import List
@@ -72,15 +73,18 @@ class Gaussian:
 
 def _process(input_powers, laser):
     with open(f'{laser.output_file}', 'w', encoding='utf-8') as file:
-        file.write(
-            f'Start date: {datetime.datetime.now().isoformat()}\n\n'
-            f'Gaussian Beam\n\nPressure in Main Discharge = {laser.discharge_pressure}kPa\n'
-            f'Small-signal Gain = {laser.small_signal_gain}\nCO2 via {laser.carbon_dioxide}\n\n'
-        )
+        file.write(textwrap.dedent(f'''
+            Start date: {datetime.datetime.now().isoformat()}
 
-        table_header = '{:<7}  {:<19}  {:<12}  {:<13}  {:<8}\n'
-        file.write(table_header.format('Pin', 'Pout', 'Sat. Int', 'ln(Pout/Pin)', 'Pout-Pin'))
-        file.write(table_header.format('(watts)', '(watts)', '(watts/cm2)', '', '(watts)'))
+            Gaussian Beam
+
+            Pressure in Main Discharge = {laser.discharge_pressure}kPa
+            Small-signal Gain = {laser.small_signal_gain}
+            CO2 via {laser.carbon_dioxide}
+
+            {'Pin':<7}  {'Pout':<19}  {'Sat. Int':<12}  {'ln(Pout/Pin)':<13}  {'Pout-Pin':<8}
+            {'(watts)':<7}  {'(watts)':<19}  {'(watts/cm2)':<12}  {'':<13}   {'(watts)':<8}
+        '''))
 
         for input_power in input_powers:
             for gaussian in gaussian_calculation(input_power, laser.small_signal_gain):
@@ -92,7 +96,9 @@ def _process(input_powers, laser):
                     f'{gaussian.output_power_minus_input_power():>9.3f}\n'
                 )
 
-        file.write('\nEnd date: {}\n'.format(datetime.datetime.now().isoformat()))
+        file.write(textwrap.dedent(f'''
+            End date: {datetime.datetime.now().isoformat()}
+       '''))
         file.flush()
 
     return file.name

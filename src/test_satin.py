@@ -25,11 +25,11 @@ def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensi
     log_output_power_divided_by_input_power = float(log_output_power_divided_by_input_power)
     output_power_minus_input_power = float(output_power_minus_input_power)
 
-    gaussians = gaussian_calculation(input_power, small_signal_gain)
-    for gaussian in gaussians:
-        if gaussian.saturation_intensity == saturation_intensity:
-            assert Gaussian.round_up(gaussian.output_power) == output_power
-            assert gaussian.log_output_power_divided_by_input_power() == log_output_power_divided_by_input_power
-            assert gaussian.output_power_minus_input_power() == output_power_minus_input_power
+    results = gaussian_calculation(input_power, small_signal_gain)
+    for result in results:
+        if result.saturation_intensity == saturation_intensity:
+            assert Gaussian.round_up(result.output_power) == output_power
+            assert result.log_output_power_divided_by_input_power() == log_output_power_divided_by_input_power
+            assert result.output_power_minus_input_power() == output_power_minus_input_power
         else:
             pass

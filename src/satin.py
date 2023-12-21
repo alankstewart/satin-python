@@ -1,7 +1,8 @@
 import datetime
 import math
+import multiprocessing
 import re
-from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, wait, ALL_COMPLETED
 from functools import reduce
 from typing import List
 
@@ -31,7 +32,7 @@ class Satin:
             input_powers = get_input_powers()
             laser_data = laser_file.read()
             laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
-            with ProcessPoolExecutor() as executor:
+            with ThreadPoolExecutor() as executor:
                 futures = [executor.submit(process, input_powers, Laser(*laser)) for laser in laser_matches]
                 wait(futures, return_when=ALL_COMPLETED)
 
@@ -98,7 +99,7 @@ def get_input_powers():
 
 def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
     saturation_intensities = range(10000, 25001, 1000)
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
         futures = [executor.submit(create_gaussian, input_power, small_signal_gain, saturation_intensity) for
                    saturation_intensity in saturation_intensities]
         wait(futures, return_when=ALL_COMPLETED)
@@ -116,26 +117,26 @@ def calculate_output_power(input_power, small_signal_gain, saturation_intensity)
         for i in range(INCR)
     ]
     input_intensity = 2 * input_power / AREA
-    # return sum(
-    #     ((((
-    #            reduce(
-    #                lambda output_intensity, j: output_intensity * (
-    #                        1 + (saturation_intensity * small_signal_gain / 32000 * DZ)
-    #                        / (saturation_intensity + output_intensity) - expr1[j]), range(INCR),
-    #                input_intensity * math.exp(-2 * r ** 2 / RAD2),
-    #            )) * EXPR * r) for r in (i * DR for i in range(int(0.5 / DR))))
-    #      )
-    # )
-    output_power = 0.0
-    for r in (i * DR for i in range(int(0.5 / DR))):
-        output_intensity = input_intensity * math.exp(-2 * r ** 2 / RAD2)
-        for j in range(INCR):
-            output_intensity *= (1 + (saturation_intensity * small_signal_gain / 32000 * DZ) / (
-                        saturation_intensity + output_intensity) - expr1[j])
-
-        output_power += output_intensity * EXPR * r
-
-    return output_power
+    return sum(
+        ((((
+               reduce(
+                   lambda output_intensity, j: output_intensity * (
+                           1 + (saturation_intensity * small_signal_gain / 32000 * DZ)
+                           / (saturation_intensity + output_intensity) - expr1[j]), range(INCR),
+                   input_intensity * math.exp(-2 * r ** 2 / RAD2),
+               )) * EXPR * r) for r in (i * DR for i in range(int(0.5 / DR))))
+         )
+    )
+    # output_power = 0.0
+    # for r in (i * DR for i in range(int(0.5 / DR))):
+    #     output_intensity = input_intensity * math.exp(-2 * r ** 2 / RAD2)
+    #     for j in range(INCR):
+    #         output_intensity *= (1 + (saturation_intensity * small_signal_gain / 32000 * DZ) / (
+    #                 saturation_intensity + output_intensity) - expr1[j])
+    #
+    #     output_power += output_intensity * EXPR * r
+    #
+    # return output_power
 
 
 if __name__ == '__main__':

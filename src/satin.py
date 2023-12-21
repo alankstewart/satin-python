@@ -4,6 +4,7 @@ import re
 from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
 
 from functools import reduce
+from typing import List
 
 PI = math.pi
 RAD = 0.18
@@ -17,71 +18,6 @@ Z1 = PI * W1 ** 2 / LAMBDA
 Z12 = Z1 ** 2
 EXPR = 2 * PI * DR
 INCR = 8001
-
-
-def process(input_powers, laser):
-    with open(f'{laser.output_file}', 'w', encoding='utf-8') as file:
-        file.write(
-            f'Start date: {datetime.datetime.now().isoformat()}\n\n'
-            f'Gaussian Beam\n\nPressure in Main Discharge = {laser.discharge_pressure}kPa\n'
-            f'Small-signal Gain = {laser.small_signal_gain}\nCO2 via {laser.carbon_dioxide}\n\n'
-        )
-
-        table_header = '{:<7}  {:<19}  {:<12}  {:<13}  {:<8}\n'
-        file.write(table_header.format('Pin', 'Pout', 'Sat. Int', 'ln(Pout/Pin)', 'Pout-Pin'))
-        file.write(table_header.format('(watts)', '(watts)', '(watts/cm2)', '', '(watts)'))
-
-        for input_power in input_powers:
-            for gaussian in gaussian_calculation(input_power, laser.small_signal_gain):
-                file.write(
-                    f'{gaussian.input_power:<7}  '
-                    f'{gaussian.output_power:<19}  '
-                    f'{gaussian.saturation_intensity:<12}  '
-                    f'{gaussian.log_output_power_divided_by_input_power():>12.3f}  '
-                    f'{gaussian.output_power_minus_input_power():>9.3f}\n'
-                )
-
-        file.write('\nEnd date: {}\n'.format(datetime.datetime.now().isoformat()))
-        file.flush()
-
-    return file.name
-
-
-def get_input_powers():
-    with open('pin.dat', encoding='utf-8') as pin_file:
-        return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
-
-
-def gaussian_calculation(input_power, small_signal_gain):
-    saturation_intensities = range(10000, 25001, 1000)
-    with ProcessPoolExecutor() as executor:
-        futures = [executor.submit(create_gaussian, input_power, small_signal_gain, saturation_intensity) for
-                   saturation_intensity in saturation_intensities]
-        wait(futures, return_when=ALL_COMPLETED)
-        return [future.result() for future in futures]
-
-
-def create_gaussian(input_power, small_signal_gain, saturation_intensity):
-    output_power = calculate_output_power(input_power, small_signal_gain, saturation_intensity)
-    return Gaussian(input_power, output_power, saturation_intensity)
-
-
-def calculate_output_power(input_power, small_signal_gain, saturation_intensity):
-    expr1 = [
-        2 * ((i - INCR // 2) / 25) * DZ / (Z12 + ((i - INCR // 2) / 25) ** 2)
-        for i in range(INCR)
-    ]
-    input_intensity = 2 * input_power / AREA
-    return sum(
-        ((((
-               reduce(
-                   lambda output_intensity, j: output_intensity * (
-                           1 + (saturation_intensity * small_signal_gain / 32000 * DZ)
-                           / (saturation_intensity + output_intensity) - expr1[j]), range(INCR),
-                   input_intensity * math.exp(-2 * r ** 2 / RAD2),
-               )) * EXPR * r) for r in (i * DR for i in range(int(0.5 / DR))))
-         )
-    )
 
 
 class Satin:
@@ -123,6 +59,71 @@ class Gaussian:
     @staticmethod
     def round_up(value):
         return round(value * 1000.0) / 1000.0
+
+
+def process(input_powers, laser):
+    with open(f'{laser.output_file}', 'w', encoding='utf-8') as file:
+        file.write(
+            f'Start date: {datetime.datetime.now().isoformat()}\n\n'
+            f'Gaussian Beam\n\nPressure in Main Discharge = {laser.discharge_pressure}kPa\n'
+            f'Small-signal Gain = {laser.small_signal_gain}\nCO2 via {laser.carbon_dioxide}\n\n'
+        )
+
+        table_header = '{:<7}  {:<19}  {:<12}  {:<13}  {:<8}\n'
+        file.write(table_header.format('Pin', 'Pout', 'Sat. Int', 'ln(Pout/Pin)', 'Pout-Pin'))
+        file.write(table_header.format('(watts)', '(watts)', '(watts/cm2)', '', '(watts)'))
+
+        for input_power in input_powers:
+            for gaussian in gaussian_calculation(input_power, laser.small_signal_gain):
+                file.write(
+                    f'{gaussian.input_power:<7}  '
+                    f'{gaussian.output_power:<19}  '
+                    f'{gaussian.saturation_intensity:<12}  '
+                    f'{gaussian.log_output_power_divided_by_input_power():>12.3f}  '
+                    f'{gaussian.output_power_minus_input_power():>9.3f}\n'
+                )
+
+        file.write('\nEnd date: {}\n'.format(datetime.datetime.now().isoformat()))
+        file.flush()
+
+    return file.name
+
+
+def get_input_powers():
+    with open('pin.dat', encoding='utf-8') as pin_file:
+        return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
+
+
+def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
+    saturation_intensities = range(10000, 25001, 1000)
+    with ProcessPoolExecutor() as executor:
+        futures = [executor.submit(create_gaussian, input_power, small_signal_gain, saturation_intensity) for
+                   saturation_intensity in saturation_intensities]
+        wait(futures, return_when=ALL_COMPLETED)
+        return [future.result() for future in futures]
+
+
+def create_gaussian(input_power, small_signal_gain, saturation_intensity):
+    output_power = calculate_output_power(input_power, small_signal_gain, saturation_intensity)
+    return Gaussian(input_power, output_power, saturation_intensity)
+
+
+def calculate_output_power(input_power, small_signal_gain, saturation_intensity):
+    expr1 = [
+        2 * ((i - INCR // 2) / 25) * DZ / (Z12 + ((i - INCR // 2) / 25) ** 2)
+        for i in range(INCR)
+    ]
+    input_intensity = 2 * input_power / AREA
+    return sum(
+        ((((
+               reduce(
+                   lambda output_intensity, j: output_intensity * (
+                           1 + (saturation_intensity * small_signal_gain / 32000 * DZ)
+                           / (saturation_intensity + output_intensity) - expr1[j]), range(INCR),
+                   input_intensity * math.exp(-2 * r ** 2 / RAD2),
+               )) * EXPR * r) for r in (i * DR for i in range(int(0.5 / DR))))
+         )
+    )
 
 
 if __name__ == '__main__':

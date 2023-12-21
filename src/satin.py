@@ -112,31 +112,30 @@ def create_gaussian(input_power, small_signal_gain, saturation_intensity):
 
 
 def calculate_output_power(input_power, small_signal_gain, saturation_intensity):
+    input_intensity = 2 * input_power / AREA
     expr1 = [
         2 * ((i - INCR // 2) / 25) * DZ / (Z12 + ((i - INCR // 2) / 25) ** 2)
         for i in range(INCR)
     ]
-    input_intensity = 2 * input_power / AREA
-    return sum(
-        ((((
-               reduce(
-                   lambda output_intensity, j: output_intensity * (
-                           1 + (saturation_intensity * small_signal_gain / 32000 * DZ)
-                           / (saturation_intensity + output_intensity) - expr1[j]), range(INCR),
-                   input_intensity * math.exp(-2 * r ** 2 / RAD2),
-               )) * EXPR * r) for r in (i * DR for i in range(int(0.5 / DR))))
-         )
-    )
-    # output_power = 0.0
-    # for r in (i * DR for i in range(int(0.5 / DR))):
-    #     output_intensity = input_intensity * math.exp(-2 * r ** 2 / RAD2)
-    #     for j in range(INCR):
-    #         output_intensity *= (1 + (saturation_intensity * small_signal_gain / 32000 * DZ) / (
-    #                 saturation_intensity + output_intensity) - expr1[j])
-    #
-    #     output_power += output_intensity * EXPR * r
-    #
-    # return output_power
+    expr2 = saturation_intensity * small_signal_gain / 32000 * DZ
+    # return sum(
+    #     ((((
+    #            reduce(
+    #                lambda output_intensity, j: output_intensity * (
+    #                            1 + expr2 / (saturation_intensity + output_intensity) - expr1[j]), range(INCR),
+    #                input_intensity * math.exp(-2 * r ** 2 / RAD2),
+    #            )) * EXPR * r) for r in (i * DR for i in range(int(0.5 / DR))))
+    #      )
+    # )
+    output_power = 0.0
+    for r in (i * DR for i in range(int(0.5 / DR))):
+        output_intensity = input_intensity * math.exp(-2 * r ** 2 / RAD2)
+        for j in range(INCR):
+            output_intensity *= (1 + expr2 / (saturation_intensity + output_intensity) - expr1[j])
+
+        output_power += output_intensity * EXPR * r
+
+    return output_power
 
 
 if __name__ == '__main__':

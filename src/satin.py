@@ -73,9 +73,8 @@ class Gaussian:
 
 def _process(input_powers, laser):
     with open(f'{laser.output_file}', 'w', encoding='utf-8') as file:
+        file.write(f'Start date: {datetime.datetime.now().isoformat()}\n')
         file.write(textwrap.dedent(f'''
-            Start date: {datetime.datetime.now().isoformat()}
-
             Gaussian Beam
 
             Pressure in Main Discharge = {laser.discharge_pressure}kPa

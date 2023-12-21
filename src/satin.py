@@ -32,11 +32,11 @@ class Satin:
         start = datetime.datetime.now().timestamp()
 
         with open(LASER_FILE, encoding='utf-8') as laser_file:
-            input_powers = get_input_powers()
+            input_powers = _get_input_powers()
             laser_data = laser_file.read()
             laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
             with ThreadPoolExecutor() as executor:
-                futures = [executor.submit(process, input_powers, Laser(*laser)) for laser in laser_matches]
+                futures = [executor.submit(_process, input_powers, Laser(*laser)) for laser in laser_matches]
                 wait(futures, return_when=ALL_COMPLETED)
 
         print(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
@@ -67,7 +67,7 @@ class Gaussian:
         return round(value * 1000.0) / 1000.0
 
 
-def process(input_powers, laser):
+def _process(input_powers, laser):
     with open(f'{laser.output_file}', 'w', encoding='utf-8') as file:
         file.write(
             f'Start date: {datetime.datetime.now().isoformat()}\n\n'
@@ -95,7 +95,7 @@ def process(input_powers, laser):
     return file.name
 
 
-def get_input_powers():
+def _get_input_powers():
     with open(PIN_FILE, encoding='utf-8') as pin_file:
         return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
 
@@ -103,18 +103,18 @@ def get_input_powers():
 def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
     saturation_intensities = range(10000, 25001, 1000)
     with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-        futures = [executor.submit(create_gaussian, input_power, small_signal_gain, saturation_intensity) for
+        futures = [executor.submit(_create_gaussian, input_power, small_signal_gain, saturation_intensity) for
                    saturation_intensity in saturation_intensities]
         wait(futures, return_when=ALL_COMPLETED)
         return [future.result() for future in futures]
 
 
-def create_gaussian(input_power, small_signal_gain, saturation_intensity):
-    output_power = calculate_output_power(input_power, small_signal_gain, saturation_intensity)
+def _create_gaussian(input_power, small_signal_gain, saturation_intensity):
+    output_power = _calculate_output_power(input_power, small_signal_gain, saturation_intensity)
     return Gaussian(input_power, output_power, saturation_intensity)
 
 
-# def calculate_output_power(input_power, small_signal_gain, saturation_intensity):
+# def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):
 #     input_intensity = 2 * input_power / AREA
 #     expr2 = saturation_intensity * small_signal_gain / 32000 * DZ
 #
@@ -128,7 +128,7 @@ def create_gaussian(input_power, small_signal_gain, saturation_intensity):
 #     return sum(outer_sum(i * DR) for i in range(int(0.5 / DR)))
 
 
-def calculate_output_power(input_power, small_signal_gain, saturation_intensity):
+def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):
     input_intensity = 2 * input_power / AREA
     expr2 = saturation_intensity * small_signal_gain / 32000 * DZ
 

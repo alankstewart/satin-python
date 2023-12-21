@@ -12,8 +12,8 @@ def read_csv(file_path):
 
 
 @pytest.mark.parametrize(
-    'input_power, small_signal_gain, saturation_intensity, output_power, log_output_power_divided_by_input_power, '
-    'output_power_minus_input_power',
+    'input_power, small_signal_gain, saturation_intensity, output_power, '
+    'log_output_power_divided_by_input_power, output_power_minus_input_power',
     read_csv('satin.csv')
 )
 def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensity, output_power,

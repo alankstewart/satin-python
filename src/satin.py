@@ -35,7 +35,7 @@ class Satin:
                 futures = [executor.submit(process, input_powers, Laser(*laser)) for laser in laser_matches]
                 wait(futures, return_when=ALL_COMPLETED)
 
-        print(f'The time was {datetime.datetime.now().timestamp() - start} seconds')
+        print(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
 
 
 class Laser:

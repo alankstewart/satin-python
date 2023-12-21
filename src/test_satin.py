@@ -1,4 +1,5 @@
 import csv
+import os
 
 import pytest
 
@@ -11,10 +12,14 @@ def _read_csv(file_path):
         return [dict(row) for row in reader]
 
 
+script_directory = os.path.dirname(os.path.abspath(__file__))
+csv_file_path = os.path.join(script_directory, 'satin.csv')
+
+
 @pytest.mark.parametrize(
     'input_power, small_signal_gain, saturation_intensity, output_power, '
     'log_output_power_divided_by_input_power, output_power_minus_input_power',
-    _read_csv('src/satin.csv')
+    _read_csv(csv_file_path)
 )
 def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensity, output_power,
                               log_output_power_divided_by_input_power, output_power_minus_input_power):

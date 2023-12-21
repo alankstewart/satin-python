@@ -2,10 +2,10 @@ import datetime
 import math
 import re
 from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
-
 from functools import reduce
 from typing import List
 
+# Constants and Configuration
 PI = math.pi
 RAD = 0.18
 RAD2 = RAD ** 2
@@ -18,6 +18,8 @@ Z1 = PI * W1 ** 2 / LAMBDA
 Z12 = Z1 ** 2
 EXPR = 2 * PI * DR
 INCR = 8001
+LASER_FILE = 'laser.dat'
+PIN_FILE = 'pin.dat'
 
 
 class Satin:
@@ -25,7 +27,7 @@ class Satin:
     def main():
         start = datetime.datetime.now().timestamp()
 
-        with open('laser.dat', encoding='utf-8') as laser_file:
+        with open(LASER_FILE, encoding='utf-8') as laser_file:
             input_powers = get_input_powers()
             laser_data = laser_file.read()
             laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
@@ -90,7 +92,7 @@ def process(input_powers, laser):
 
 
 def get_input_powers():
-    with open('pin.dat', encoding='utf-8') as pin_file:
+    with open(PIN_FILE, encoding='utf-8') as pin_file:
         return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
 
 

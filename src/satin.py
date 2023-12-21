@@ -61,14 +61,10 @@ class Gaussian:
     saturation_intensity: int
 
     def log_output_power_divided_by_input_power(self):
-        return self.round_up(math.log(self.output_power / self.input_power))
+        return math.log(self.output_power / self.input_power)
 
     def output_power_minus_input_power(self):
-        return self.round_up(self.output_power - self.input_power)
-
-    @staticmethod
-    def round_up(value):
-        return round(value * 1000.0) / 1000.0
+        return self.output_power - self.input_power
 
 
 def _process(input_powers, laser):

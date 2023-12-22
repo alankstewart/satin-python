@@ -81,15 +81,16 @@ def _process(input_powers, laser):
             {'(watts)':<7}  {'(watts)':<19}  {'(watts/cm2)':<12}  {'':<13}   {'(watts)':<8}
         '''))
 
-        for input_power in input_powers:
-            for gaussian in gaussian_calculation(input_power, laser.small_signal_gain):
-                file.write(
-                    f'{gaussian.input_power:>7}  '
-                    f'{gaussian.output_power:<19}  '
-                    f'{gaussian.saturation_intensity:<12}  '
-                    f'{gaussian.log_output_power_divided_by_input_power():>12.3f}  '
-                    f'{gaussian.output_power_minus_input_power():>9.3f}\n'
-                )
+        lines = [
+            f'{gaussian.input_power:>7}  '
+            f'{gaussian.output_power:<19}  '
+            f'{gaussian.saturation_intensity:<12}  '
+            f'{gaussian.log_output_power_divided_by_input_power():>12.3f}  '
+            f'{gaussian.output_power_minus_input_power():>9.3f}\n'
+            for input_power in input_powers
+            for gaussian in gaussian_calculation(input_power, laser.small_signal_gain)
+        ]
+        file.writelines(lines)
 
         file.write(f'\nEnd date: {datetime.datetime.now().isoformat()}')
         file.flush()

@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from src.satin import gaussian_calculation, Gaussian
+from src.satin import gaussian_calculation
 
 
 def _read_csv(file_path):

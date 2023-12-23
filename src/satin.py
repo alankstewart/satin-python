@@ -3,7 +3,7 @@ import math
 import multiprocessing
 import re
 import textwrap
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, wait, ALL_COMPLETED
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import List
 
@@ -37,11 +37,11 @@ class Satin:
             input_powers = _get_input_powers()
             laser_data = laser_file.read()
             laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
+
             with ThreadPoolExecutor() as executor:
-                futures = [
-                    executor.submit(_process, input_powers, Laser(laser[0], float(laser[1]), int(laser[2]), laser[3]))
-                    for laser in laser_matches]
-                wait(futures, return_when=ALL_COMPLETED)
+                list(executor.map(
+                    lambda laser: _process(input_powers, Laser(laser[0], float(laser[1]), int(laser[2]), laser[3])),
+                    laser_matches))
 
         print(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
 
@@ -106,11 +106,10 @@ def _get_input_powers():
 def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
     saturation_intensities = range(10000, 25001, 1000)
 
-    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-        futures = [executor.submit(_create_gaussian, input_power, small_signal_gain, saturation_intensity) for
-                   saturation_intensity in saturation_intensities]
-        wait(futures, return_when=ALL_COMPLETED)
-        return [future.result() for future in futures]
+    with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+        return pool.starmap(_create_gaussian,
+                            [(input_power, small_signal_gain, saturation_intensity) for saturation_intensity in
+                             saturation_intensities])
 
 
 def _create_gaussian(input_power, small_signal_gain, saturation_intensity):

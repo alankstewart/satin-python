@@ -105,6 +105,7 @@ def _get_input_powers():
 
 def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
     saturation_intensities = range(10000, 25001, 1000)
+
     with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
         futures = [executor.submit(_create_gaussian, input_power, small_signal_gain, saturation_intensity) for
                    saturation_intensity in saturation_intensities]

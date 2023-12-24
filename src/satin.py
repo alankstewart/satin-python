@@ -107,28 +107,9 @@ def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
     saturation_intensities = range(10000, 25001, 1000)
 
     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
-        return pool.starmap(_create_gaussian,
+        return pool.starmap(_calculate_output_power,
                             [(input_power, small_signal_gain, saturation_intensity) for saturation_intensity in
                              saturation_intensities])
-
-
-def _create_gaussian(input_power, small_signal_gain, saturation_intensity):
-    output_power = _calculate_output_power(input_power, small_signal_gain, saturation_intensity)
-    return Gaussian(input_power, output_power, saturation_intensity)
-
-
-# def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):
-#     input_intensity = 2 * input_power / AREA
-#     expr2 = saturation_intensity * small_signal_gain / 32000 * DZ
-#
-#     def inner_sum(output_intensity, j):
-#         return output_intensity * (1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j])
-#
-#     def outer_sum(r):
-#         from functools import reduce
-#         return reduce(inner_sum, range(INCR), input_intensity * math.exp(-2 * r ** 2 / RAD2)) * EXPR * r
-#
-#     return sum(outer_sum(i * DR) for i in range(int(0.5 / DR)))
 
 
 def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):
@@ -143,7 +124,7 @@ def _calculate_output_power(input_power, small_signal_gain, saturation_intensity
 
         output_power += output_intensity * EXPR * r
 
-    return output_power
+    return Gaussian(input_power, output_power, saturation_intensity)
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ from src.satin import gaussian_calculation
 def _read_csv(file_path):
     with open(file_path, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
-        return [dict(row) for row in reader]
+        return list(reader)
 
 
 def _round_up(value):

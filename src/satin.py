@@ -1,9 +1,10 @@
+import concurrent
 import datetime
 import math
 import multiprocessing
 import re
 import textwrap
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, wait, ALL_COMPLETED
 from dataclasses import dataclass
 from typing import List
 
@@ -106,10 +107,11 @@ def _get_input_powers():
 def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
     saturation_intensities = range(10000, 25001, 1000)
 
-    with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
-        return pool.starmap(_calculate_output_power,
-                            [(input_power, small_signal_gain, saturation_intensity) for saturation_intensity in
-                             saturation_intensities])
+    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+        futures = [executor.submit(_calculate_output_power, input_power, small_signal_gain, saturation_intensity) for
+                   saturation_intensity in saturation_intensities]
+        wait(futures, return_when=ALL_COMPLETED)
+        return [future.result() for future in futures]
 
 
 def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):

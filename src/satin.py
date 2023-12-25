@@ -40,10 +40,10 @@ class Satin:
             laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
 
             with ThreadPoolExecutor() as executor:
-                futures = [
+                tasks = [
                     executor.submit(_process, input_powers, Laser(laser[0], float(laser[1]), int(laser[2]), laser[3]))
                     for laser in laser_matches]
-                wait(futures, return_when=ALL_COMPLETED)
+                wait(tasks, return_when=ALL_COMPLETED)
 
         print(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
 

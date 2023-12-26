@@ -1,4 +1,5 @@
 import datetime
+import logging
 import math
 import multiprocessing
 import re
@@ -32,6 +33,7 @@ PIN_FILE = 'pin.dat'
 class Satin:
     @staticmethod
     def main():
+        logging.basicConfig(level=logging.INFO, format='%(message)s')
         start = datetime.datetime.now().timestamp()
 
         with open(LASER_FILE, encoding='utf-8') as laser_file:
@@ -45,7 +47,7 @@ class Satin:
                     for laser in laser_matches]
                 wait(tasks, return_when=ALL_COMPLETED)
 
-        print(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
+        logging.info(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
 
 
 @dataclass(frozen=True)

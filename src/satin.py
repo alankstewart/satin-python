@@ -111,8 +111,9 @@ def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
     saturation_intensities = range(10000, 25001, 1000)
 
     with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-        futures = [executor.submit(_calculate_output_power, input_power, small_signal_gain, saturation_intensity) for
-                   saturation_intensity in saturation_intensities]
+        futures = [
+            executor.submit(_calculate_output_power_alternate, input_power, small_signal_gain, saturation_intensity) for
+            saturation_intensity in saturation_intensities]
         wait(futures, return_when=ALL_COMPLETED)
         return [future.result() for future in futures]
 
@@ -138,7 +139,7 @@ def _calculate_output_power_alternate(input_power, small_signal_gain, saturation
 
     output_power = sum(((((reduce(lambda output_intensity, j: output_intensity * (
             1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j]), range(INCR),
-                                  input_intensity * math.exp(-2 * r ** 2 / RAD2), )) * EXPR * r) for r in
+                                  input_intensity * math.exp(-2 * r ** 2 / RAD2))) * EXPR * r) for r in
                          (i * DR for i in range(int(0.5 / DR))))))
 
     return Gaussian(input_power, output_power, saturation_intensity)

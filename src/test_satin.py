@@ -33,5 +33,3 @@ def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensi
             assert _round_up(
                 gaussian.log_output_power_divided_by_input_power()) == float(log_output_power_divided_by_input_power)
             assert _round_up(gaussian.output_power_minus_input_power()) == float(output_power_minus_input_power)
-        else:
-            pass

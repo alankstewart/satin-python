@@ -114,13 +114,14 @@ def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
             executor.submit(_calculate_output_power, input_power, small_signal_gain, saturation_intensity) for
             saturation_intensity in saturation_intensities]
         wait(futures, return_when=ALL_COMPLETED)
-        return [future.result() for future in futures]
+        return [Gaussian(input_power, future.result(), saturation_intensity) for future, saturation_intensity in
+                zip(futures, saturation_intensities)]
 
 
 def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):
     input_intensity = 2 * input_power / AREA
     expr2 = saturation_intensity * small_signal_gain / 32000 * DZ
-    output_power = sum(
+    return sum(
         (
             reduce(
                 lambda output_intensity, j: output_intensity * (
@@ -129,7 +130,6 @@ def _calculate_output_power(input_power, small_signal_gain, saturation_intensity
             ) * EXPR * r for r in (i * DR for i in range(int(0.5 / DR)))
         )
     )
-    return Gaussian(input_power, output_power, saturation_intensity)
 
 
 if __name__ == '__main__':

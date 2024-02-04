@@ -4,6 +4,7 @@ import math
 import multiprocessing
 import re
 import textwrap
+from collections import namedtuple
 from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from functools import reduce
@@ -49,12 +50,11 @@ class Satin:
         logging.info(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
 
 
-@dataclass(frozen=True)
-class Laser:
-    output_file: str
-    small_signal_gain: float
-    discharge_pressure: int
-    carbon_dioxide: str
+Laser = namedtuple('Laser', [
+    'output_file',
+    'small_signal_gain',
+    'discharge_pressure',
+    'carbon_dioxide'])
 
 
 @dataclass(frozen=True, order=True)

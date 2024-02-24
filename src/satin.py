@@ -61,8 +61,8 @@ def _process(input_powers, laser):
             Small-signal Gain = {laser.small_signal_gain}
             CO2 via {laser.carbon_dioxide}
 
-            {'Pin':<10}{'Pout':<21}{'Sat. Int':<14}{'ln(Pout/Pin)':<15}{'Pout-Pin':<8}
-            {'(watts)':<10}{'(watts)':<21}{'(watts/cm2)':<14}{'':<15}{'(watts)':<8}
+            Pin       Pout                 Sat. Int      ln(Pout/Pin)   Pout-Pin
+            (watts)   (watts)              (watts/cm2)                  (watts)
         '''))
 
         lines = [

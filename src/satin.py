@@ -67,7 +67,7 @@ def _process(input_powers, laser):
 
         lines = [
             f'{gaussian.input_power:<10}'
-            f'{gaussian.output_power:<21}'
+            f'{gaussian.output_power:<21.14f}'
             f'{gaussian.saturation_intensity:<14}'
             f'{math.log(gaussian.output_power / gaussian.input_power):>5.3f}'
             f'{gaussian.output_power - gaussian.input_power:>15.3f}\n'

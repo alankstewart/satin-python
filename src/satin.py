@@ -6,9 +6,7 @@ import re
 import textwrap
 from collections import namedtuple
 from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
-from dataclasses import dataclass
 from functools import reduce
-from typing import List
 
 PI = math.pi
 RAD = 0.18
@@ -28,6 +26,9 @@ EXPR1 = [
 ]
 LASER_FILE = 'laser.dat'
 PIN_FILE = 'pin.dat'
+
+Laser = namedtuple('Laser', 'output_file small_signal_gain discharge_pressure carbon_dioxide')
+Gaussian = namedtuple('Gaussian', 'input_power output_power saturation_intensity')
 
 
 class Satin:
@@ -50,26 +51,6 @@ class Satin:
         logging.info(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
 
 
-Laser = namedtuple('Laser', [
-    'output_file',
-    'small_signal_gain',
-    'discharge_pressure',
-    'carbon_dioxide'])
-
-
-@dataclass(frozen=True, order=True)
-class Gaussian:
-    input_power: float
-    output_power: float
-    saturation_intensity: int
-
-    def log_output_power_divided_by_input_power(self):
-        return math.log(self.output_power / self.input_power)
-
-    def output_power_minus_input_power(self):
-        return self.output_power - self.input_power
-
-
 def _process(input_powers, laser):
     with open(f'{laser.output_file}', 'w', encoding='utf-8') as file:
         file.write(f'Start date: {datetime.datetime.now().isoformat()}\n')
@@ -80,16 +61,16 @@ def _process(input_powers, laser):
             Small-signal Gain = {laser.small_signal_gain}
             CO2 via {laser.carbon_dioxide}
 
-            {'Pin':<7}  {'Pout':<19}  {'Sat. Int':<12}  {'ln(Pout/Pin)':<13}  {'Pout-Pin':<8}
-            {'(watts)':<7}  {'(watts)':<19}  {'(watts/cm2)':<12}  {'':<13}   {'(watts)':<8}
+            {'Pin':<10}{'Pout':<21}{'Sat. Int':<14}{'ln(Pout/Pin)':<15}{'Pout-Pin':<8}
+            {'(watts)':<10}{'(watts)':<21}{'(watts/cm2)':<14}{'':<15}{'(watts)':<8}
         '''))
 
         lines = [
-            f'{gaussian.input_power:>7}  '
-            f'{gaussian.output_power:<19}  '
-            f'{gaussian.saturation_intensity:<12}  '
-            f'{gaussian.log_output_power_divided_by_input_power():>12.3f}  '
-            f'{gaussian.output_power_minus_input_power():>9.3f}\n'
+            f'{gaussian.input_power:<10}'
+            f'{gaussian.output_power:<21}'
+            f'{gaussian.saturation_intensity:<14}'
+            f'{math.log(gaussian.output_power / gaussian.input_power):>5.3f}'
+            f'{gaussian.output_power - gaussian.input_power:>15.3f}\n'
             for input_power in input_powers
             for gaussian in gaussian_calculation(input_power, laser.small_signal_gain)
         ]
@@ -106,7 +87,7 @@ def _get_input_powers():
         return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
 
 
-def gaussian_calculation(input_power, small_signal_gain) -> List[Gaussian]:
+def gaussian_calculation(input_power, small_signal_gain):
     saturation_intensities = range(10000, 25001, 1000)
 
     with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:

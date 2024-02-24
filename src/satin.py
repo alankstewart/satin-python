@@ -70,7 +70,7 @@ def _process(input_powers, laser):
             f'{gaussian.output_power:<21.14f}'
             f'{gaussian.saturation_intensity:<14}'
             f'{math.log(gaussian.output_power / gaussian.input_power):>5.3f}'
-            f'{gaussian.output_power - gaussian.input_power:>15.3f}\n'
+            f'{gaussian.output_power - gaussian.input_power:>16.3f}\n'
             for input_power in input_powers
             for gaussian in gaussian_calculation(input_power, laser.small_signal_gain)
         ]

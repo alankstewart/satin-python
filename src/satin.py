@@ -36,20 +36,22 @@ class Satin:
     @staticmethod
     def main():
         logging.basicConfig(level=logging.INFO, format='%(message)s')
-        start = datetime.datetime.now().timestamp()
+        _calculate()
 
-        with open(LASER_FILE, encoding='utf-8') as laser_file:
-            input_powers = _get_input_powers()
-            laser_data = laser_file.read()
-            laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
 
-            with ThreadPoolExecutor() as executor:
-                tasks = [
-                    executor.submit(_process, input_powers, Laser(laser[0], float(laser[1]), int(laser[2]), laser[3]))
-                    for laser in laser_matches]
-                wait(tasks, return_when=ALL_COMPLETED)
+def _calculate():
+    start = datetime.datetime.now().timestamp()
+    with open(LASER_FILE, encoding='utf-8') as laser_file:
+        input_powers = _get_input_powers()
+        laser_data = laser_file.read()
+        laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
 
-        logging.info(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
+        with ThreadPoolExecutor() as executor:
+            tasks = [
+                executor.submit(_process, input_powers, Laser(laser[0], float(laser[1]), int(laser[2]), laser[3]))
+                for laser in laser_matches]
+            wait(tasks, return_when=ALL_COMPLETED)
+    logging.info(f'The time was {datetime.datetime.now().timestamp() - start:.3f} seconds')
 
 
 def _process(input_powers, laser):

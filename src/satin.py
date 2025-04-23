@@ -47,38 +47,39 @@ class Satin:
         Main method to configure logging and invoke the calculation process.
         """
         logging.basicConfig(level=logging.INFO, format='%(message)s')
-        calculate()
+        Satin.calculate()
 
 
-def calculate():
-    """
-    Performs the main calculation process by reading laser data, calculating Gaussian beam
-    properties, and saving the results to output files.
-    """
-    start = datetime.datetime.now().timestamp()
+    @staticmethod
+    def calculate():
+        """
+        Performs the main calculation process by reading laser data, calculating Gaussian beam
+        properties, and saving the results to output files.
+        """
+        start = datetime.datetime.now().timestamp()
 
-    with open(LASER_FILE, encoding='utf-8') as laser_file:
-        input_powers = _get_input_powers()
-        laser_data = laser_file.read()
-        laser_matches = re.findall(
-            r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data
-        )
+        with open(LASER_FILE, encoding='utf-8') as laser_file:
+            input_powers = _get_input_powers()
+            laser_data = laser_file.read()
+            laser_matches = re.findall(
+                r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data
+            )
 
-        with ThreadPoolExecutor() as executor:
-            tasks = [
-                executor.submit(
-                    _process,
-                    input_powers,
-                    Laser(output_file=laser[0],
-                          small_signal_gain=float(laser[1]),
-                          discharge_pressure=int(laser[2]),
-                          carbon_dioxide=laser[3])
-                )
-                for laser in laser_matches
-            ]
-            wait(tasks, return_when=ALL_COMPLETED)
+            with ThreadPoolExecutor() as executor:
+                tasks = [
+                    executor.submit(
+                        _process,
+                        input_powers,
+                        Laser(output_file=laser[0],
+                              small_signal_gain=float(laser[1]),
+                              discharge_pressure=int(laser[2]),
+                              carbon_dioxide=laser[3])
+                    )
+                    for laser in laser_matches
+                ]
+                wait(tasks, return_when=ALL_COMPLETED)
 
-    logging.info('The time was %.3f seconds', datetime.datetime.now().timestamp() - start)
+        logging.info('The time was %.3f seconds', datetime.datetime.now().timestamp() - start)
 
 
 def _process(input_powers, laser):

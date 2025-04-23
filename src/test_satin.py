@@ -31,8 +31,12 @@ csv_file_path = os.path.join(script_directory, 'satin.csv')
     'log_output_power_divided_by_input_power, output_power_minus_input_power',
     _read_csv(csv_file_path)
 )
-def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensity, output_power,
-                              log_output_power_divided_by_input_power, output_power_minus_input_power):
+def test_gaussian_calculation(input_power,
+                              small_signal_gain,
+                              saturation_intensity,
+                              output_power,
+                              log_output_power_divided_by_input_power,
+                              output_power_minus_input_power):
     """
     Test the gaussian calculation function with parameters from the CSV file.
     """
@@ -42,6 +46,7 @@ def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensi
     for gaussian in gaussian_calculation(input_power, small_signal_gain):
         if gaussian.saturation_intensity == int(saturation_intensity):
             assert _round_up(gaussian.output_power) == float(output_power)
-            assert _round_up(log(gaussian.output_power / gaussian.input_power)) == float(
-                log_output_power_divided_by_input_power)
-            assert _round_up(gaussian.output_power - gaussian.input_power) == float(output_power_minus_input_power)
+            assert (_round_up(log(gaussian.output_power / gaussian.input_power)) ==
+                    float(log_output_power_divided_by_input_power))
+            assert (_round_up(gaussian.output_power - gaussian.input_power) ==
+                    float(output_power_minus_input_power))

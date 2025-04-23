@@ -47,10 +47,10 @@ class Satin:
         Main method to configure logging and invoke the calculation process.
         """
         logging.basicConfig(level=logging.INFO, format='%(message)s')
-        _calculate()
+        calculate()
 
 
-def _calculate():
+def calculate():
     """
     Performs the main calculation process by reading laser data, calculating Gaussian beam
     properties, and saving the results to output files.

@@ -1,3 +1,6 @@
+"""
+test_satin.py
+"""
 import csv
 import os
 from math import log
@@ -11,7 +14,14 @@ def _read_csv(file_path):
     """
     with open(file_path, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
-        return list(reader)
+        return [(
+            row['input_power'],
+            row['small_signal_gain'],
+            row['saturation_intensity'],
+            row['output_power'],
+            row['log_output_power_divided_by_input_power'],
+            row['output_power_minus_input_power']
+        ) for row in reader]
 
 
 def _round_up(value):
@@ -27,19 +37,16 @@ csv_file_path = os.path.join(script_directory, 'satin.csv')
 
 
 @pytest.mark.parametrize(
-    'input_power, small_signal_gain, saturation_intensity, output_power, '
-    'log_output_power_divided_by_input_power, output_power_minus_input_power',
+    'params',
     _read_csv(csv_file_path)
 )
-def test_gaussian_calculation(input_power,
-                              small_signal_gain,
-                              saturation_intensity,
-                              output_power,
-                              log_output_power_divided_by_input_power,
-                              output_power_minus_input_power):
+def test_gaussian_calculation(params):
     """
     Test the gaussian calculation function with parameters from the CSV file.
     """
+    input_power, small_signal_gain, saturation_intensity, output_power, log_output_power_divided_by_input_power, output_power_minus_input_power = params
+
+    # Convert types where necessary
     input_power = int(input_power)
     small_signal_gain = float(small_signal_gain)
 

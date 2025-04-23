@@ -21,6 +21,7 @@ def _round_up(value):
     return round(value * 1000.0) / 1000.0
 
 
+# Get the script directory and build the path to the CSV file
 script_directory = os.path.dirname(os.path.abspath(__file__))
 csv_file_path = os.path.join(script_directory, 'satin.csv')
 
@@ -33,7 +34,7 @@ csv_file_path = os.path.join(script_directory, 'satin.csv')
 def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensity, output_power,
                               log_output_power_divided_by_input_power, output_power_minus_input_power):
     """
-    Test the gaussian calculation function with the parameters from the CSV file.
+    Test the gaussian calculation function with parameters from the CSV file.
     """
     input_power = int(input_power)
     small_signal_gain = float(small_signal_gain)

@@ -44,9 +44,13 @@ def test_gaussian_calculation(params):
     """
     Test the gaussian calculation function with parameters from the CSV file.
     """
-    input_power, small_signal_gain, saturation_intensity, output_power, log_output_power_divided_by_input_power, output_power_minus_input_power = params
+    (input_power,
+     small_signal_gain,
+     saturation_intensity,
+     output_power,
+     log_output_power_divided_by_input_power,
+     output_power_minus_input_power) = params
 
-    # Convert types where necessary
     input_power = int(input_power)
     small_signal_gain = float(small_signal_gain)
 

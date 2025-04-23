@@ -1,19 +1,23 @@
 import csv
-from math import log
 import os
-
+from math import log
 import pytest
-
 from src.satin import gaussian_calculation
 
 
 def _read_csv(file_path):
-    with open(file_path, newline='') as csvfile:
+    """
+    Reads a CSV file and returns its content as a list of dictionaries.
+    """
+    with open(file_path, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         return list(reader)
 
 
 def _round_up(value):
+    """
+    Rounds up the value to three decimal places.
+    """
     return round(value * 1000.0) / 1000.0
 
 
@@ -28,7 +32,13 @@ csv_file_path = os.path.join(script_directory, 'satin.csv')
 )
 def test_gaussian_calculation(input_power, small_signal_gain, saturation_intensity, output_power,
                               log_output_power_divided_by_input_power, output_power_minus_input_power):
-    for gaussian in gaussian_calculation(int(input_power), float(small_signal_gain)):
+    """
+    Test the gaussian calculation function with the parameters from the CSV file.
+    """
+    input_power = int(input_power)
+    small_signal_gain = float(small_signal_gain)
+
+    for gaussian in gaussian_calculation(input_power, small_signal_gain):
         if gaussian.saturation_intensity == int(saturation_intensity):
             assert _round_up(gaussian.output_power) == float(output_power)
             assert _round_up(log(gaussian.output_power / gaussian.input_power)) == float(

@@ -63,11 +63,7 @@ def _calculate():
 
         with ThreadPoolExecutor() as executor:
             tasks = [
-                executor.submit(
-                    _process,
-                    input_powers,
-                    Laser(laser[0], float(laser[1]), int(laser[2]), laser[3])
-                )
+                executor.submit(_process, input_powers, Laser(laser[0], float(laser[1]), int(laser[2]), laser[3]))
                 for laser in laser_matches
             ]
             wait(tasks, return_when=ALL_COMPLETED)
@@ -126,12 +122,7 @@ def gaussian_calculation(input_power, small_signal_gain):
 
     with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
         futures = [
-            executor.submit(
-                _calculate_output_power,
-                input_power,
-                small_signal_gain,
-                saturation_intensity
-            )
+            executor.submit(_calculate_output_power, input_power, small_signal_gain, saturation_intensity)
             for saturation_intensity in saturation_intensities
         ]
         wait(futures, return_when=ALL_COMPLETED)
@@ -148,17 +139,15 @@ def _calculate_output_power(input_power, small_signal_gain, saturation_intensity
     """
     input_intensity = 2 * input_power / AREA
     expr2 = saturation_intensity * small_signal_gain / 32000 * DZ
-
-    def _calculate_inner(r):
-        return reduce(
-            lambda output_intensity, j: output_intensity * (
-                1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j]
-            ),
-            range(INCR),
-            input_intensity * math.exp(-2 * r ** 2 / RAD2),
-        ) * EXPR * r
-
-    return sum(_calculate_inner(r) for r in (i * DR for i in range(int(0.5 / DR))))
+    return sum(
+        (
+            reduce(
+                lambda output_intensity, j: output_intensity * (
+                        1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j]
+                ), range(INCR), input_intensity * math.exp(-2 * r ** 2 / RAD2),
+            ) * EXPR * r for r in (i * DR for i in range(int(0.5 / DR)))
+        )
+    )
 
 
 if __name__ == '__main__':

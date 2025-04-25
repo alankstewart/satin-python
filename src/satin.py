@@ -10,6 +10,7 @@ import textwrap
 from collections import namedtuple
 from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
 from functools import reduce
+from pathlib import Path
 
 PI = math.pi
 RAD = 0.18
@@ -49,12 +50,11 @@ class Satin:
         logging.basicConfig(level=logging.INFO, format='%(message)s')
         Satin.calculate()
 
-
     @staticmethod
     def calculate():
         """
         Performs the main calculation process by reading laser data, calculating Gaussian beam
-        properties, and saving the results to output files.
+        properties, and saving the results to output files. Logs the output file paths.
         """
         start = datetime.datetime.now().timestamp()
 
@@ -66,7 +66,7 @@ class Satin:
             )
 
             with ThreadPoolExecutor() as executor:
-                tasks = [
+                futures = {
                     executor.submit(
                         _process,
                         input_powers,
@@ -74,10 +74,16 @@ class Satin:
                               small_signal_gain=float(laser[1]),
                               discharge_pressure=int(laser[2]),
                               carbon_dioxide=laser[3])
-                    )
+                    ): laser[0]
                     for laser in laser_matches
-                ]
-                wait(tasks, return_when=ALL_COMPLETED)
+                }
+
+                for future in futures:
+                    try:
+                        result_path = future.result()
+                        logging.debug(f"Successfully created {result_path}")
+                    except Exception as e:
+                        logging.error(f"Error processing {futures[future]}: {e}")
 
         logging.info('The time was %.3f seconds', datetime.datetime.now().timestamp() - start)
 
@@ -86,7 +92,8 @@ def _process(input_powers, laser):
     """
     Processes each laser entry, performs the calculations, and writes the results to an output file.
     """
-    with open(f'{laser.output_file}', 'w', encoding='utf-8') as file:
+    output_path = Path(laser.output_file)
+    with output_path.open('w', encoding='utf-8') as file:
         file.write(f'Start date: {datetime.datetime.now().isoformat()}\n')
         file.write(textwrap.dedent(f'''
             Gaussian Beam
@@ -113,7 +120,7 @@ def _process(input_powers, laser):
         file.write(f'\nEnd date: {datetime.datetime.now().isoformat()}')
         file.flush()
 
-    return file.name
+    return output_path
 
 
 def _get_input_powers():

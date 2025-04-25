@@ -81,9 +81,9 @@ class Satin:
                 for future in futures:
                     try:
                         result_path = future.result()
-                        logging.debug(f"Successfully created {result_path}")
+                        logging.debug("Successfully created %s", result_path)
                     except (RuntimeError, IOError, ValueError) as e:
-                        logging.error(f"Error processing {futures[future]}: {e}")
+                        logging.error("Error processing %s: %s", futures[future], e)
 
         logging.info('The time was %.3f seconds', datetime.datetime.now().timestamp() - start)
 

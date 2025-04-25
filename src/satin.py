@@ -82,7 +82,7 @@ class Satin:
                     try:
                         result_path = future.result()
                         logging.debug(f"Successfully created {result_path}")
-                    except Exception as e:
+                    except (RuntimeError, IOError, ValueError) as e:
                         logging.error(f"Error processing {futures[future]}: {e}")
 
         logging.info('The time was %.3f seconds', datetime.datetime.now().timestamp() - start)
@@ -91,35 +91,36 @@ class Satin:
 def _process(input_powers, laser):
     """
     Processes each laser entry, performs the calculations, and writes the results to an output file.
+    Returns the Path to the output file.
     """
     output_path = Path(laser.output_file)
-    with output_path.open('w', encoding='utf-8') as file:
-        file.write(f'Start date: {datetime.datetime.now().isoformat()}\n')
-        file.write(textwrap.dedent(f'''
-            Gaussian Beam
 
-            Pressure in Main Discharge = {laser.discharge_pressure}kPa
-            Small-signal Gain = {laser.small_signal_gain}
-            CO2 via {laser.carbon_dioxide}
+    header = textwrap.dedent(f"""\
+        Start date: {datetime.datetime.now().isoformat()}
 
-            Pin       Pout                 Sat. Int      ln(Pout/Pin)   Pout-Pin
-            (watts)   (watts)              (watts/cm2)                  (watts)
-        '''))
+        Gaussian Beam
 
-        lines = [
-            f'{gaussian.input_power:<10}'
-            f'{gaussian.output_power:<21.14f}'
-            f'{gaussian.saturation_intensity:<14}'
-            f'{math.log(gaussian.output_power / gaussian.input_power):>5.3f}'
-            f'{gaussian.output_power - gaussian.input_power:>16.3f}\n'
-            for input_power in input_powers
-            for gaussian in gaussian_calculation(input_power, laser.small_signal_gain)
-        ]
-        file.writelines(lines)
+        Pressure in Main Discharge = {laser.discharge_pressure}kPa
+        Small-signal Gain = {laser.small_signal_gain}
+        CO2 via {laser.carbon_dioxide}
 
-        file.write(f'\nEnd date: {datetime.datetime.now().isoformat()}')
-        file.flush()
+        Pin       Pout                 Sat. Int      ln(Pout/Pin)   Pout-Pin
+        (watts)   (watts)              (watts/cm2)                  (watts)
+    """)
 
+    gaussian_lines = ''.join(
+        f'{gaussian.input_power:<10}'
+        f'{gaussian.output_power:<21.14f}'
+        f'{gaussian.saturation_intensity:<14}'
+        f'{math.log(gaussian.output_power / gaussian.input_power):>5.3f}'
+        f'{gaussian.output_power - gaussian.input_power:>16.3f}\n'
+        for input_power in input_powers
+        for gaussian in gaussian_calculation(input_power, laser.small_signal_gain)
+    )
+
+    footer = f"\nEnd date: {datetime.datetime.now().isoformat()}"
+
+    output_path.write_text(header + gaussian_lines + footer, encoding='utf-8')
     return output_path
 
 

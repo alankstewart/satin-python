@@ -7,7 +7,6 @@ import math
 import multiprocessing
 import re
 import textwrap
-from collections import namedtuple
 from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,12 +31,24 @@ EXPR1 = [
 LASER_FILE = 'laser.dat'
 PIN_FILE = 'pin.dat'
 
-Laser = namedtuple('Laser', 'output_file small_signal_gain discharge_pressure carbon_dioxide')
+
+@dataclass
+class Laser:
+    """
+    Container for laser discharge properties.
+    """
+    output_file: str
+    small_signal_gain: float
+    discharge_pressure: int
+    carbon_dioxide: str
 
 
 @dataclass
 class Gaussian:
-    input_power: float
+    """
+    Gaussian beam properties.
+    """
+    input_power: int
     output_power: float
     saturation_intensity: float
 
@@ -131,7 +142,10 @@ def _process(input_powers, laser):
         (watts)   (watts)              (watts/cm2)                  (watts)
     """)
 
-    gaussian_lines = ''.join(str(g) for g in gaussian_calculation(input_powers, laser.small_signal_gain))
+    gaussian_lines = ''.join(
+        str(g)
+        for g in gaussian_calculation(input_powers, laser.small_signal_gain)
+    )
 
     footer = f"\nEnd date: {datetime.datetime.now().isoformat()}"
 

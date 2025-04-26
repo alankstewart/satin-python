@@ -54,10 +54,16 @@ class Gaussian:
 
     @property
     def log_output_power_divided_by_input_power(self):
+        """
+        Natural log of output power divided by input power (ln(Pout / Pin)).
+        """
         return math.log(self.output_power / self.input_power)
 
     @property
     def output_power_minus_input_power(self):
+        """
+        Difference between output power and input power (Pout - Pin).
+        """
         return self.output_power - self.input_power
 
     def __str__(self):

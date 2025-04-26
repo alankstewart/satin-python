@@ -9,6 +9,7 @@ import re
 import textwrap
 from collections import namedtuple
 from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
+from dataclasses import dataclass
 from pathlib import Path
 
 PI = math.pi
@@ -32,7 +33,30 @@ LASER_FILE = 'laser.dat'
 PIN_FILE = 'pin.dat'
 
 Laser = namedtuple('Laser', 'output_file small_signal_gain discharge_pressure carbon_dioxide')
-Gaussian = namedtuple('Gaussian', 'input_power output_power saturation_intensity')
+
+
+@dataclass
+class Gaussian:
+    input_power: float
+    output_power: float
+    saturation_intensity: float
+
+    @property
+    def log_output_power_divided_by_input_power(self):
+        return math.log(self.output_power / self.input_power)
+
+    @property
+    def output_power_minus_input_power(self):
+        return self.output_power - self.input_power
+
+    def __str__(self):
+        return (
+            f'{self.input_power:<10}'
+            f'{self.output_power:<21.14f}'
+            f'{self.saturation_intensity:<14}'
+            f'{self.log_output_power_divided_by_input_power:>5.3f}'
+            f'{self.output_power_minus_input_power:>16.3f}\n'
+        )
 
 
 class Satin:
@@ -107,15 +131,7 @@ def _process(input_powers, laser):
         (watts)   (watts)              (watts/cm2)                  (watts)
     """)
 
-    gaussians = gaussian_calculation(input_powers, laser.small_signal_gain)
-    gaussian_lines = ''.join(
-        f'{g.input_power:<10}'
-        f'{g.output_power:<21.14f}'
-        f'{g.saturation_intensity:<14}'
-        f'{math.log(g.output_power / g.input_power):>5.3f}'
-        f'{g.output_power - g.input_power:>16.3f}\n'
-        for g in gaussians
-    )
+    gaussian_lines = ''.join(str(g) for g in gaussian_calculation(input_powers, laser.small_signal_gain))
 
     footer = f"\nEnd date: {datetime.datetime.now().isoformat()}"
 

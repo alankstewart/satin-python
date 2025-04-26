@@ -133,7 +133,7 @@ def _get_input_powers():
 
 def gaussian_calculation(input_powers, small_signal_gain):
     """
-    Calculates Gaussian results in parallel across all (input_power, saturation_intensity) pairs.
+    Calculates Gaussian results in parallel.
     """
     saturation_intensities = list(range(10000, 25001, 1000))
     tasks = [
@@ -154,7 +154,7 @@ def gaussian_calculation(input_powers, small_signal_gain):
 
 def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):
     """
-    Optimized version: avoids reduce, precomputes values.
+    Calculates output power.
     """
     input_intensity = 2 * input_power / AREA
     expr2 = saturation_intensity * small_signal_gain / 32000 * DZ

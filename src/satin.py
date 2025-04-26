@@ -9,7 +9,6 @@ import re
 import textwrap
 from collections import namedtuple
 from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
-from functools import reduce
 from pathlib import Path
 
 PI = math.pi
@@ -108,14 +107,14 @@ def _process(input_powers, laser):
         (watts)   (watts)              (watts/cm2)                  (watts)
     """)
 
+    gaussians = gaussian_calculation(input_powers, laser.small_signal_gain)
     gaussian_lines = ''.join(
-        f'{gaussian.input_power:<10}'
-        f'{gaussian.output_power:<21.14f}'
-        f'{gaussian.saturation_intensity:<14}'
-        f'{math.log(gaussian.output_power / gaussian.input_power):>5.3f}'
-        f'{gaussian.output_power - gaussian.input_power:>16.3f}\n'
-        for input_power in input_powers
-        for gaussian in gaussian_calculation(input_power, laser.small_signal_gain)
+        f'{g.input_power:<10}'
+        f'{g.output_power:<21.14f}'
+        f'{g.saturation_intensity:<14}'
+        f'{math.log(g.output_power / g.input_power):>5.3f}'
+        f'{g.output_power - g.input_power:>16.3f}\n'
+        for g in gaussians
     )
 
     footer = f"\nEnd date: {datetime.datetime.now().isoformat()}"
@@ -132,44 +131,46 @@ def _get_input_powers():
         return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
 
 
-def gaussian_calculation(input_power, small_signal_gain):
+def gaussian_calculation(input_powers, small_signal_gain):
     """
-    Performs Gaussian beam calculations for a given input power and small signal gain.
-    Uses parallel processing to calculate output power for a range of saturation intensities.
+    Calculates Gaussian results in parallel across all (input_power, saturation_intensity) pairs.
     """
-    saturation_intensities = range(10000, 25001, 1000)
+    saturation_intensities = list(range(10000, 25001, 1000))
+    tasks = [
+        (input_power, small_signal_gain, sat_intensity)
+        for input_power in input_powers
+        for sat_intensity in saturation_intensities
+    ]
 
     with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-        futures = [
-            executor.submit(_calculate_output_power,
-                            input_power,
-                            small_signal_gain,
-                            saturation_intensity)
-            for saturation_intensity in saturation_intensities
-        ]
+        futures = [executor.submit(_calculate_output_power, *task) for task in tasks]
         wait(futures, return_when=ALL_COMPLETED)
-        return [
-            Gaussian(input_power, future.result(), saturation_intensity)
-            for future, saturation_intensity in zip(futures, saturation_intensities)
-        ]
+
+    return [
+        Gaussian(input_power, future.result(), sat_intensity)
+        for (input_power, _, sat_intensity), future in zip(tasks, futures)
+    ]
 
 
 def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):
     """
-    Calculates the output power of the laser based on input power, small signal gain,
-    and saturation intensity.
+    Optimized version: avoids reduce, precomputes values.
     """
     input_intensity = 2 * input_power / AREA
     expr2 = saturation_intensity * small_signal_gain / 32000 * DZ
-    return sum(
-        (
-            reduce(
-                lambda output_intensity, j: output_intensity * (
-                        1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j]
-                ), range(INCR), input_intensity * math.exp(-2 * r ** 2 / RAD2),
-            ) * EXPR * r for r in (i * DR for i in range(int(0.5 / DR)))
-        )
-    )
+    r_values = [i * DR for i in range(int(0.5 / DR))]
+    exp_values = [input_intensity * math.exp(-2 * r ** 2 / RAD2) for r in r_values]
+
+    total = 0.0
+    for r, initial_intensity in zip(r_values, exp_values):
+        output_intensity = initial_intensity
+        for j in range(INCR):
+            output_intensity *= (
+                    1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j]
+            )
+        total += output_intensity * EXPR * r
+
+    return total
 
 
 if __name__ == '__main__':

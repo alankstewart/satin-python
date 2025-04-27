@@ -197,16 +197,16 @@ def _calculate_output_power(input_power, small_signal_gain, saturation_intensity
     r_values = [i * DR for i in range(int(0.5 / DR))]
     exp_values = [input_intensity * math.exp(-2 * r ** 2 / RAD2) for r in r_values]
 
-    total = 0.0
+    output_power = 0.0
     for r, initial_intensity in zip(r_values, exp_values):
         output_intensity = initial_intensity
         for j in range(INCR):
             output_intensity *= (
                     1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j]
             )
-        total += output_intensity * EXPR * r
+        output_power += output_intensity * EXPR * r
 
-    return total
+    return output_power
 
 
 if __name__ == '__main__':

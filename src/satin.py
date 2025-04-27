@@ -128,6 +128,14 @@ class Satin:
         logging.info('The time was %.3f seconds', datetime.datetime.now().timestamp() - start)
 
 
+def _get_input_powers():
+    """
+    Reads the input powers from the pin.dat file.
+    """
+    with open(PIN_FILE, encoding='utf-8') as pin_file:
+        return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
+
+
 def _process(input_powers, laser):
     """
     Processes each laser entry, performs the calculations, and writes the results to an output file.
@@ -157,14 +165,6 @@ def _process(input_powers, laser):
 
     output_path.write_text(header + gaussian_lines + footer, encoding='utf-8')
     return output_path
-
-
-def _get_input_powers():
-    """
-    Reads the input powers from the pin.dat file.
-    """
-    with open(PIN_FILE, encoding='utf-8') as pin_file:
-        return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
 
 
 def gaussian_calculation(input_powers, small_signal_gain):

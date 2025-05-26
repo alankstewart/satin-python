@@ -101,9 +101,7 @@ class Satin:
         with open(LASER_FILE, encoding='utf-8') as laser_file:
             input_powers = _get_input_powers()
             laser_data = laser_file.read()
-            laser_matches = re.findall(
-                r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data
-            )
+            laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
 
             with ThreadPoolExecutor() as executor:
                 futures = {
@@ -201,9 +199,7 @@ def _calculate_output_power(input_power, small_signal_gain, saturation_intensity
     for r, initial_intensity in zip(r_values, exp_values):
         output_intensity = initial_intensity
         for j in range(INCR):
-            output_intensity *= (
-                    1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j]
-            )
+            output_intensity *= (1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j])
         output_power += output_intensity * EXPR * r
 
     return output_power

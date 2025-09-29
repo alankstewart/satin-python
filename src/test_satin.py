@@ -59,6 +59,7 @@ def test_gaussian_calculation(params):
     assert gaussian is not None, f"No Gaussian for saturation_intensity={saturation_intensity}"
 
     assert gaussian.output_power == approx(output_power, abs=5e-4)
-    assert log(gaussian.output_power / gaussian.input_power) == approx(log_output_power_divided_by_input_power,
-                                                                       abs=5e-4)
-    assert gaussian.output_power - gaussian.input_power == approx(output_power_minus_input_power, abs=5e-4)
+    assert (log(gaussian.output_power / gaussian.input_power) ==
+            approx(log_output_power_divided_by_input_power, abs=5e-4))
+    assert (gaussian.output_power - gaussian.input_power ==
+            approx(output_power_minus_input_power, abs=5e-4))

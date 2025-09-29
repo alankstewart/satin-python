@@ -101,7 +101,8 @@ class Satin:
         with open(LASER_FILE, encoding='utf-8') as laser_file:
             input_powers = _get_input_powers()
             laser_data = laser_file.read()
-            laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)', laser_data)
+            laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)',
+                                       laser_data)
 
             with ThreadPoolExecutor() as executor:
                 futures = {

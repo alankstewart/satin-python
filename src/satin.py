@@ -184,7 +184,8 @@ def gaussian_calculation(input_power, small_signal_gain):
     expr2 = saturation_intensities * float(small_signal_gain) / 32000.0 * DZ
 
     for j in range(INCR):
-        multiplier = 1.0 + (expr2[None, :] / (saturation_intensities[None, :] + output_intensity)) - EXPR1[j]
+        multiplier = 1.0 + (expr2[None, :] / (saturation_intensities[None, :]
+                                              + output_intensity)) - EXPR1[j]
         output_intensity *= multiplier
 
     integrand = output_intensity * (EXPR * r_values[:, None])

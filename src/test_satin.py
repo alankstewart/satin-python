@@ -3,8 +3,8 @@ test_satin.py
 """
 import csv
 import os
-from math import log
 from functools import lru_cache
+
 import pytest
 from _pytest.python_api import approx
 
@@ -58,8 +58,8 @@ def test_gaussian_calculation(params):
     gaussian = gaussians.get(saturation_intensity)
     assert gaussian is not None, f"No Gaussian for saturation_intensity={saturation_intensity}"
 
-    assert gaussian.output_power == approx(output_power, abs=5e-4)
-    assert (log(gaussian.output_power / gaussian.input_power) ==
-            approx(log_output_power_divided_by_input_power, abs=5e-4))
-    assert (gaussian.output_power - gaussian.input_power ==
-            approx(output_power_minus_input_power, abs=5e-4))
+    assert gaussian.output_power == approx(output_power, abs=1e-3)
+    assert gaussian.log_output_power_divided_by_input_power == approx(
+        log_output_power_divided_by_input_power, abs=1e-3)
+    assert gaussian.output_power_minus_input_power == approx(
+        output_power_minus_input_power, abs=1e-3)

@@ -196,24 +196,5 @@ def gaussian_calculation(input_power, small_signal_gain):
     ]
 
 
-def _calculate_output_power(input_power, small_signal_gain, saturation_intensity):
-    """
-    Calculates output power.
-    """
-    input_intensity = 2 * input_power / AREA
-    expr2 = saturation_intensity * small_signal_gain / 32000 * DZ
-    r_values = [i * DR for i in range(int(0.5 / DR))]
-    exp_values = [input_intensity * math.exp(-2 * r ** 2 / RAD2) for r in r_values]
-
-    output_power = 0.0
-    for r, initial_intensity in zip(r_values, exp_values):
-        output_intensity = initial_intensity
-        for j in range(INCR):
-            output_intensity *= (1 + expr2 / (saturation_intensity + output_intensity) - EXPR1[j])
-        output_power += output_intensity * EXPR * r
-
-    return output_power
-
-
 if __name__ == '__main__':
     Satin.main()

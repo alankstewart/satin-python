@@ -8,6 +8,7 @@ import re
 import textwrap
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -166,6 +167,7 @@ def _process(input_powers, laser):
     return output_path
 
 
+@lru_cache(maxsize=None)
 def gaussian_calculation(input_power, small_signal_gain):
     """
     Vectorised Gaussian results for a single input_power and small_signal_gain.
@@ -179,12 +181,10 @@ def gaussian_calculation(input_power, small_signal_gain):
 
     n_sat = saturation_intensities.size
     output_intensity = np.broadcast_to(exp_values[:, None], (nr, n_sat)).copy()
-
-    sat = saturation_intensities.astype(float)
-    expr2 = sat * float(small_signal_gain) / 32000.0 * DZ
+    expr2 = saturation_intensities * float(small_signal_gain) / 32000.0 * DZ
 
     for j in range(INCR):
-        multiplier = 1.0 + (expr2[None, :] / (sat[None, :] + output_intensity)) - EXPR1[j]
+        multiplier = 1.0 + (expr2[None, :] / (saturation_intensities[None, :] + output_intensity)) - EXPR1[j]
         output_intensity *= multiplier
 
     integrand = output_intensity * (EXPR * r_values[:, None])

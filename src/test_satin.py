@@ -38,7 +38,7 @@ def get_gaussians(input_power, small_signal_gain):
     """
     return {
         g.saturation_intensity: g
-        for g in gaussian_calculation([input_power], small_signal_gain)
+        for g in gaussian_calculation(input_power, small_signal_gain)
     }
 
 

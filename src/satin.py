@@ -4,12 +4,13 @@ satin.py
 import datetime
 import logging
 import math
-import multiprocessing
 import re
 import textwrap
-from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
+
+import numpy as np
 
 PI = math.pi
 RAD = 0.18
@@ -23,10 +24,8 @@ Z1 = PI * W1 ** 2 / LAMBDA
 Z12 = Z1 ** 2
 EXPR = 2 * PI * DR
 INCR = 8001
-EXPR1 = [
-    2 * ((i - INCR // 2) / 25) * DZ / (Z12 + ((i - INCR // 2) / 25) ** 2)
-    for i in range(INCR)
-]
+_indices = np.arange(INCR)
+EXPR1 = 2 * ((_indices - INCR // 2) / 25.0) * DZ / (Z12 + ((_indices - INCR // 2) / 25.0) ** 2)
 
 LASER_FILE = 'laser.dat'
 PIN_FILE = 'pin.dat'
@@ -157,7 +156,8 @@ def _process(input_powers, laser):
 
     gaussian_lines = ''.join(
         str(g)
-        for g in gaussian_calculation(input_powers, laser.small_signal_gain)
+        for input_power in input_powers
+        for g in gaussian_calculation(input_power, laser.small_signal_gain)
     )
 
     footer = f"\nEnd date: {datetime.datetime.now().isoformat()}"
@@ -166,24 +166,33 @@ def _process(input_powers, laser):
     return output_path
 
 
-def gaussian_calculation(input_powers, small_signal_gain):
+def gaussian_calculation(input_power, small_signal_gain):
     """
-    Calculates Gaussian results in parallel.
+    Vectorised Gaussian results for a single input_power and small_signal_gain.
     """
-    saturation_intensities = list(range(10000, 25001, 1000))
-    tasks = [
-        (input_power, small_signal_gain, sat_intensity)
-        for input_power in input_powers
-        for sat_intensity in saturation_intensities
-    ]
+    saturation_intensities = np.arange(10000, 25001, 1000)
 
-    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-        futures = [executor.submit(_calculate_output_power, *task) for task in tasks]
-        wait(futures, return_when=ALL_COMPLETED)
+    nr = int(0.5 / DR)
+    r_values = np.arange(nr) * DR
+    input_intensity = 2.0 * float(input_power) / AREA
+    exp_values = input_intensity * np.exp(-2.0 * r_values ** 2 / RAD2)
+
+    n_sat = saturation_intensities.size
+    output_intensity = np.broadcast_to(exp_values[:, None], (nr, n_sat)).copy()
+
+    sat = saturation_intensities.astype(float)
+    expr2 = sat * float(small_signal_gain) / 32000.0 * DZ
+
+    for j in range(INCR):
+        multiplier = 1.0 + (expr2[None, :] / (sat[None, :] + output_intensity)) - EXPR1[j]
+        output_intensity *= multiplier
+
+    integrand = output_intensity * (EXPR * r_values[:, None])
+    output_power_per_sat = integrand.sum(axis=0)
 
     return [
-        Gaussian(input_power, future.result(), sat_intensity)
-        for (input_power, _, sat_intensity), future in zip(tasks, futures)
+        Gaussian(input_power, float(output_power_per_sat[i]), int(saturation_intensities[i]))
+        for i in range(n_sat)
     ]
 
 

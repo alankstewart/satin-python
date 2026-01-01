@@ -6,7 +6,7 @@ import logging
 import math
 import re
 import textwrap
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -27,6 +27,10 @@ EXPR = 2 * PI * DR
 INCR = 8001
 _indices = np.arange(INCR)
 EXPR1 = 2 * ((_indices - INCR // 2) / 25.0) * DZ / (Z12 + ((_indices - INCR // 2) / 25.0) ** 2)
+NR = int(0.5 / DR)
+R_VALUES = np.arange(NR) * DR
+EXP_PROFILE = np.exp(-2.0 * R_VALUES ** 2 / RAD2)
+INTEGRATION_FACTOR = EXPR * R_VALUES[:, None]
 
 LASER_FILE = 'laser.dat'
 PIN_FILE = 'pin.dat'
@@ -34,9 +38,6 @@ PIN_FILE = 'pin.dat'
 
 @dataclass
 class Laser:
-    """
-    Container for laser discharge properties.
-    """
     output_file: str
     small_signal_gain: float
     discharge_pressure: int
@@ -45,25 +46,16 @@ class Laser:
 
 @dataclass
 class Gaussian:
-    """
-    Gaussian beam properties.
-    """
     input_power: int
     output_power: float
     saturation_intensity: float
 
     @property
     def log_output_power_divided_by_input_power(self):
-        """
-        Natural log of output power divided by input power (ln(Pout / Pin)).
-        """
         return math.log(self.output_power / self.input_power)
 
     @property
     def output_power_minus_input_power(self):
-        """
-        Difference between output power and input power (Pout - Pin).
-        """
         return self.output_power - self.input_power
 
     def __str__(self):
@@ -77,34 +69,24 @@ class Gaussian:
 
 
 class Satin:
-    """
-    The Satin class handles laser beam calculations, including reading data from files,
-    performing Gaussian beam computations, and writing results to output files.
-    """
-
     @staticmethod
     def main():
-        """
-        Main method to configure logging and invoke the calculation process.
-        """
         logging.basicConfig(level=logging.INFO, format='%(message)s')
         Satin.calculate()
 
     @staticmethod
     def calculate():
-        """
-        Performs the main calculation process by reading laser data, calculating Gaussian beam
-        properties, and saving the results to output files. Logs the output file paths.
-        """
         start = datetime.datetime.now().timestamp()
 
         with open(LASER_FILE, encoding='utf-8') as laser_file:
             input_powers = _get_input_powers()
             laser_data = laser_file.read()
-            laser_matches = re.findall(r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)',
-                                       laser_data)
+            laser_matches = re.findall(
+                r'((?:md|pi)[a-z]{2}\.out)\s+(\d{2}\.\d)\s+(\d+)\s+(MD|PI)',
+                laser_data
+            )
 
-            with ThreadPoolExecutor() as executor:
+            with ProcessPoolExecutor() as executor:
                 futures = {
                     executor.submit(
                         _process,
@@ -128,18 +110,11 @@ class Satin:
 
 
 def _get_input_powers():
-    """
-    Reads the input powers from the pin.dat file.
-    """
     with open(PIN_FILE, encoding='utf-8') as pin_file:
         return [int(match.group()) for match in re.finditer(r'\d+', pin_file.read())]
 
 
 def _process(input_powers, laser):
-    """
-    Processes each laser entry, performs the calculations, and writes the results to an output file.
-    Returns the Path to the output file.
-    """
     output_path = Path(laser.output_file)
 
     header = textwrap.dedent(f"""\
@@ -168,27 +143,30 @@ def _process(input_powers, laser):
 
 
 @lru_cache(maxsize=None)
-def gaussian_calculation(input_power, small_signal_gain):
-    """
-    Vectorised Gaussian results for a single input_power and small_signal_gain.
-    """
+def _sat_and_expr2(small_signal_gain):
     saturation_intensities = np.arange(10000, 25001, 1000)
+    expr2 = saturation_intensities * float(small_signal_gain) / 32000.0 * DZ
+    return saturation_intensities, expr2
 
-    nr = int(0.5 / DR)
-    r_values = np.arange(nr) * DR
+
+def gaussian_calculation(input_power, small_signal_gain):
+    saturation_intensities, expr2 = _sat_and_expr2(small_signal_gain)
+
     input_intensity = 2.0 * float(input_power) / AREA
-    exp_values = input_intensity * np.exp(-2.0 * r_values ** 2 / RAD2)
+    exp_values = input_intensity * EXP_PROFILE
 
     n_sat = saturation_intensities.size
-    output_intensity = np.broadcast_to(exp_values[:, None], (nr, n_sat)).copy()
-    expr2 = saturation_intensities * float(small_signal_gain) / 32000.0 * DZ
+    output_intensity = np.broadcast_to(exp_values[:, None], (NR, n_sat)).copy()
 
     for j in range(INCR):
-        multiplier = 1.0 + (expr2[None, :] / (saturation_intensities[None, :]
-                                              + output_intensity)) - EXPR1[j]
+        multiplier = (
+                1.0
+                + (expr2[None, :] / (saturation_intensities[None, :] + output_intensity))
+                - EXPR1[j]
+        )
         output_intensity *= multiplier
 
-    integrand = output_intensity * (EXPR * r_values[:, None])
+    integrand = output_intensity * INTEGRATION_FACTOR
     output_power_per_sat = integrand.sum(axis=0)
 
     return [
